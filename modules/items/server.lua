@@ -166,6 +166,28 @@ local TriggerEventHooks = require 'modules.hooks.server'
 ---@param count number
 ---@return table, number
 ---Generates metadata for new items being created through AddItem, buyItem, etc.
+---Rarity metadata 
+local RARITIES = {
+    common = true, uncommon = true, rare = true,
+    epic = true, mythic = true, legendary = true
+}
+
+local function sanitizeRarity(r)
+    if not r then return nil end
+    r = string.lower(tostring(r))
+    return RARITIES[r] and r or 'common'
+end
+
+local function resolveDefaultRarity(item)
+    -- Priority:
+    -- 1) data/items.lua -> ItemList[item.name].metadata.rarity
+    -- 2) item.rarity (kalau anda define pada shared table)
+    local fromItemList = ItemList[item.name]
+        and ItemList[item.name].metadata
+        and ItemList[item.name].metadata.rarity
+    return sanitizeRarity(fromItemList or item.rarity)
+end
+
 function Items.Metadata(inv, item, metadata, count)
 	if type(inv) ~= 'table' then inv = Inventory(inv) end
 	if not item.weapon then metadata = not metadata and {} or type(metadata) == 'string' and {type=metadata} or metadata end
@@ -214,6 +236,12 @@ function Items.Metadata(inv, item, metadata, count)
 			metadata = setItemDurability(ItemList[item.name], metadata)
 		end
 	end
+
+    if metadata.rarity ~= nil then
+        metadata.rarity = sanitizeRarity(metadata.rarity)
+    else
+        metadata.rarity = resolveDefaultRarity(item) or nil
+    end
 
 	if count > 1 and not item.stack then
 		count = 1
