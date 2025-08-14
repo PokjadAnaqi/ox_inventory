@@ -166,26 +166,24 @@ local TriggerEventHooks = require 'modules.hooks.server'
 ---@param count number
 ---@return table, number
 ---Generates metadata for new items being created through AddItem, buyItem, etc.
----Rarity metadata 
+-- Rarity Helper
 local RARITIES = {
     common = true, uncommon = true, rare = true,
     epic = true, mythic = true, legendary = true
 }
 
 local function sanitizeRarity(r)
-    if not r then return nil end
-    r = string.lower(tostring(r))
+    -- defaultkan ke 'common' bila tiada / invalid
+    r = (r and tostring(r):lower()) or 'common'
     return RARITIES[r] and r or 'common'
 end
 
 local function resolveDefaultRarity(item)
-    -- Priority:
-    -- 1) data/items.lua -> ItemList[item.name].metadata.rarity
-    -- 2) item.rarity (kalau anda define pada shared table)
     local fromItemList = ItemList[item.name]
         and ItemList[item.name].metadata
         and ItemList[item.name].metadata.rarity
-    return sanitizeRarity(fromItemList or item.rarity)
+    -- fallback ke 'common' jika tiada
+    return sanitizeRarity(fromItemList or item.rarity or 'common')
 end
 
 function Items.Metadata(inv, item, metadata, count)
@@ -237,11 +235,12 @@ function Items.Metadata(inv, item, metadata, count)
 		end
 	end
 
-    if metadata.rarity ~= nil then
-        metadata.rarity = sanitizeRarity(metadata.rarity)
-    else
-        metadata.rarity = resolveDefaultRarity(item) or nil
-    end
+         -- FORCE RARITY (selepas response hook)
+         if metadata.rarity ~= nil then
+               metadata.rarity = sanitizeRarity(metadata.rarity)
+         else
+               metadata.rarity = resolveDefaultRarity(item)   -- sudah pasti 'common' jika tiada
+         end
 
 	if count > 1 and not item.stack then
 		count = 1
@@ -285,7 +284,7 @@ function Items.CheckMetadata(metadata, item, name, ostime)
 	local durability = metadata.durability
 
 	if durability then
-		if durability < 0 or durability > 100 and ostime >= durability then
+		if durability < 0 or (durability > 100 and ostime >= durability) then
 			metadata.durability = 0
 		end
 	else
@@ -322,6 +321,12 @@ function Items.CheckMetadata(metadata, item, name, ostime)
 		if metadata.specialAmmo and type(metadata.specialAmmo) ~= 'string' then
 			metadata.specialAmmo = nil
 		end
+	end
+
+	if metadata.rarity ~= nil then
+		metadata.rarity = sanitizeRarity(metadata.rarity)
+	else
+		metadata.rarity = resolveDefaultRarity(item)  -- falls back to 'common'
 	end
 
 	return metadata
