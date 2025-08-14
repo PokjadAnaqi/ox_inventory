@@ -234,12 +234,11 @@ function Items.Metadata(inv, item, metadata, count)
 		end
 	end
 
-         -- FORCE RARITY (selepas response hook)
-         if metadata.rarity ~= nil then
-               metadata.rarity = sanitizeRarity(metadata.rarity)
-         else
-               metadata.rarity = resolveDefaultRarity(item)   -- sudah pasti 'common' jika tiada
-         end
+    if metadata.rarity ~= nil then
+        metadata.rarity = sanitizeRarity(metadata.rarity)
+    else
+        metadata.rarity = resolveDefaultRarity(item)
+    end
 
 	if count > 1 and not item.stack then
 		count = 1
