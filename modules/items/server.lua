@@ -173,7 +173,6 @@ local RARITIES = {
 }
 
 local function sanitizeRarity(r)
-    -- defaultkan ke 'common' bila tiada / invalid
     r = (r and tostring(r):lower()) or 'common'
     return RARITIES[r] and r or 'common'
 end
@@ -182,7 +181,7 @@ local function resolveDefaultRarity(item)
     local fromItemList = ItemList[item.name]
         and ItemList[item.name].metadata
         and ItemList[item.name].metadata.rarity
-    -- fallback ke 'common' jika tiada
+    -- fallback to 'common' if metadata missing
     return sanitizeRarity(fromItemList or item.rarity or 'common')
 end
 
